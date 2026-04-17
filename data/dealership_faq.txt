@@ -1,0 +1,147 @@
+RAG KNOWLEDGE BASE
+Domain: Automotive Virtual Showroom
+File: dealership_faq.txt
+Version: 1.0
+Description: Frequently asked questions about purchasing, financing, delivery, warranties, and test drives.
+
+Each entry is a standalone knowledge chunk.
+
+---
+[id: faq_001]
+category: financing
+question: Do you offer financing or lease options?
+answer: Yes. We offer both purchase financing and lease programs. Financing terms range from 24 to 84 months with rates starting at 2.9% APR for qualified buyers. Lease terms are available at 24, 36, and 48 months with mileage options of 10,000, 12,000, or 15,000 miles per year. Applications can be started online or in-dealership.
+tags: financing, lease, purchase, APR
+
+---
+[id: faq_002]
+category: financing
+question: What credit score is needed to qualify for financing?
+answer: We work with a range of lending partners. A score of 680 or above typically qualifies for our best rates. Scores below 680 may still qualify through our secondary financing partners, though terms will differ. Pre-approval is available online and does not affect your credit score.
+tags: financing, credit, pre-approval
+
+---
+[id: faq_003]
+category: financing
+question: Can I trade in my current vehicle?
+answer: Yes. We accept trade-ins for all makes and models. An appraisal can be completed online using our trade-in tool or in person at the dealership. The appraised value is applied directly toward your purchase or lease.
+tags: trade-in, financing
+
+---
+[id: faq_004]
+category: test_drive
+question: How do I schedule a test drive?
+answer: Test drives can be scheduled online through the booking tool, by calling the dealership directly, or through the virtual showroom assistant. Select your preferred model, trim, and time slot. Test drives are available Tuesday through Sunday, 9am to 6pm. Drives last approximately 30 minutes and include a guided route.
+tags: test-drive, scheduling, appointment
+
+---
+[id: faq_005]
+category: test_drive
+question: Can I test drive at home or at my office?
+answer: Yes. Our At-Home Drive program delivers the vehicle to any location within a 30-mile radius of the dealership at no charge. Availability is limited — advance booking of at least 48 hours is required. A valid driver's license must be presented at delivery.
+tags: test-drive, at-home, delivery, convenience
+
+---
+[id: faq_006]
+category: test_drive
+question: Is a test drive available for the Aether Apex Hypercar?
+answer: Access to the Apex Hypercar for test experiences requires a confirmed reservation deposit and is conducted at the track facility. Contact a sales advisor directly to arrange an Apex experience.
+tags: test-drive, hypercar, apex, exclusive
+
+---
+[id: faq_007]
+category: delivery
+question: How long does delivery take after placing an order?
+answer: In-stock vehicles are available for delivery within 3 to 7 business days. Custom-configured orders typically take 8 to 14 weeks depending on the model and selected options. You will receive a production update at each milestone.
+tags: delivery, timeline, custom-order
+
+---
+[id: faq_008]
+category: delivery
+question: Can the vehicle be delivered to my home?
+answer: Yes. Home delivery is available within a 100-mile radius of the dealership at no additional charge. For distances beyond 100 miles, enclosed transport can be arranged at cost. All delivered vehicles include a full walkthrough with a delivery specialist.
+tags: delivery, home-delivery, logistics
+
+---
+[id: faq_009]
+category: warranty
+question: What warranty comes with a new vehicle?
+answer: All new Aether vehicles include a 5-year / 60,000-mile basic vehicle warranty, an 8-year / 100,000-mile battery and drivetrain warranty, and a 7-year corrosion perforation warranty. Roadside assistance is included for 5 years.
+tags: warranty, battery, drivetrain, coverage
+
+---
+[id: faq_010]
+category: warranty
+question: Are software and over-the-air updates covered under warranty?
+answer: Yes. Software updates are provided at no charge throughout the vehicle's lifetime, including vehicles out of the standard warranty period. Hardware failures caused by a software update are covered under warranty regardless of mileage.
+tags: warranty, software, OTA-updates
+
+---
+[id: faq_011]
+category: warranty
+question: What is not covered by the warranty?
+answer: Normal wear items such as brake pads, tires, and wiper blades are excluded. Damage caused by accidents, misuse, unauthorized modifications, or failure to follow maintenance guidelines is also excluded. Cosmetic damage such as paint chips and interior wear are not covered after 30 days from delivery.
+tags: warranty, exclusions
+
+---
+[id: faq_012]
+category: charging
+question: What home charging equipment do you provide or recommend?
+answer: We recommend installing a Level 2 home charger (240V, 48A circuit) for overnight charging. We partner with ChargePoint and Grizzl-E for hardware. Installation coordination is available through the dealership. The Standard and Long Range models fully charge overnight in 8 to 11 hours on a Level 2 charger.
+tags: charging, home-charging, Level-2, installation
+
+---
+[id: faq_013]
+category: charging
+question: What public charging networks are compatible?
+answer: All Aether vehicles support CCS2 (Combined Charging System) and are compatible with all major public networks including Electrify America, EVgo, Blink, and ChargePoint. The in-vehicle navigation automatically routes to compatible stations based on battery level.
+tags: charging, public-network, CCS2, navigation
+
+---
+[id: faq_014]
+category: customization
+question: Can I customize the vehicle before ordering?
+answer: Yes. Our online configurator and the virtual 3D showroom allow full customization of exterior color, interior trim, technology package, and wheel options before placing an order. A detailed summary with pricing is generated automatically.
+tags: customization, configurator, ordering
+
+---
+[id: faq_015]
+category: customization
+question: Can colors be changed after an order is placed?
+answer: Color and option changes are accepted up to 72 hours after order placement at no charge. After 72 hours, changes may incur a modification fee and extend the delivery timeline. Contact your sales advisor to request changes.
+tags: customization, order-change, color
+
+---
+[id: faq_016]
+category: pricing
+question: Is the displayed price the final price?
+answer: The displayed price is the manufacturer's suggested retail price before taxes, registration fees, and optional add-ons. A detailed out-the-door estimate including all fees is available from your sales advisor or via the online quote tool.
+tags: pricing, fees, MSRP, transparency
+
+---
+[id: faq_017]
+category: pricing
+question: Are there any federal or state incentives available?
+answer: Depending on your location and income, federal tax credits of up to $7,500 may apply under the Inflation Reduction Act. State and local incentives vary. Our finance team can provide an estimate of applicable credits during the purchase process. Incentive eligibility is not guaranteed and depends on individual tax situations.
+tags: pricing, incentives, tax-credit, federal
+
+---
+[id: faq_018]
+category: service
+question: Where can the vehicle be serviced?
+answer: Service is available at all authorized Aether service centers. Mobile service appointments are also available for software updates, minor repairs, and diagnostics — a technician comes to your location. Major repairs and body work require an in-center visit.
+tags: service, maintenance, mobile-service
+
+---
+[id: faq_019]
+category: service
+question: How often does the vehicle need scheduled maintenance?
+answer: Aether electric vehicles have no oil changes, transmission fluid, or spark plug replacements. Recommended service intervals are every 12 months or 12,000 miles, covering brake inspection, tire rotation, cabin air filter, and a full systems diagnostic.
+tags: service, maintenance, schedule, electric
+
+---
+[id: faq_020]
+category: ownership
+question: Can I sell the vehicle back to the dealership?
+answer: Yes. We offer a guaranteed buyback program for vehicles within 3 years of original purchase date that meet mileage and condition requirements. Vehicles outside this window are accepted as trade-ins at market value. Contact a sales advisor for a buyback quote.
+tags: ownership, resale, buyback, trade-in

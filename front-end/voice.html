@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Aether Motors — Text + Read-aloud</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(ellipse at top, #0d0d22 0%, #080810 100%);
+    color: #e0e0f0;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 24px; gap: 16px;
+  }
+  .brand { text-align: center; border-bottom: 1px solid rgba(255,215,0,0.1); padding-bottom: 16px; width: 100%; max-width: 720px; }
+  .brand-logo { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase;
+    background: linear-gradient(90deg, #c8960c, #ffd700, #c8960c);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .brand-sub { font-size: 0.65rem; color: #44445a; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 3px; }
+  .panel { background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 20px 16px; width: 100%; max-width: 720px;
+    display: flex; flex-direction: column; gap: 14px; }
+  .panel-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: #44445a; }
+  .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+    gap: 10px; padding: 4px 2px; min-height: 260px; max-height: 420px; width: 100%; }
+  .msg { padding: 9px 12px; border-radius: 12px; font-size: 0.81rem; line-height: 1.55; max-width: 92%; }
+  .msg .role { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.45; margin-bottom: 3px; }
+  .msg.user { align-self: flex-end; background: rgba(60,40,130,0.35); border: 1px solid rgba(100,70,200,0.2); }
+  .msg.assistant { align-self: flex-start; background: rgba(255,200,0,0.06); border: 1px solid rgba(255,200,0,0.1); }
+  .msg.system { align-self: center; background: rgba(255,255,255,0.03); color: #555568; font-size: 0.72rem; font-style: italic; max-width: 100%; text-align: center; }
+  .input-row { display: flex; gap: 8px; width: 100%; }
+  .text-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 10px 16px; color: #e0e0f0; font-size: 0.82rem; font-family: inherit; outline: none; }
+  .text-input:focus { border-color: rgba(255,215,0,0.3); }
+  .send-btn { background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.2); color: #ffd700;
+    border-radius: 50%; width: 40px; height: 40px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .send-btn:disabled { opacity: 0.3; cursor: default; }
+  .meta { font-size: 0.65rem; color: #555568; }
+  .tts-note { font-size: 0.68rem; color: #b06aff; margin-top: 6px; }
+  audio { width: 100%; margin-top: 8px; }
+  .server-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .server-dot.ok { background: #4dcc80; }
+  .server-dot.err { background: #ff6060; }
+  .footer { font-size: 0.62rem; color: #2a2a3a; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <div class="brand-logo">⚡ Aether Motors</div>
+  <div class="brand-sub">Text chat · Same orchestrator + RAG · Read-aloud via OpenAI TTS</div>
+</div>
+
+<div class="panel">
+  <div class="panel-label">💬 Conversation</div>
+  <div id="server-line" class="meta"><span class="server-dot err" id="srv-dot"></span>Checking server…</div>
+  <div class="chat-messages" id="messages"></div>
+  <div class="input-row">
+    <input class="text-input" id="text-input" placeholder="Ask about vehicles, layouts, financing… or say &quot;read that aloud&quot;" autocomplete="off"/>
+    <button class="send-btn" id="btn-send" title="Send" disabled>➤</button>
+  </div>
+  <div class="tts-note" id="tts-disclosure" style="display:none;"></div>
+</div>
+
+<div class="footer">No microphone — POST /agent only · TTS when channel is voice</div>
+
+<script>
+const SERVER_URL = "http://localhost:8000";
+const SESSION_ID = "web-" + Math.random().toString(36).slice(2, 10);
+
+const messages = document.getElementById("messages");
+const textInput = document.getElementById("text-input");
+const btnSend = document.getElementById("btn-send");
+const srvDot = document.getElementById("srv-dot");
+const serverLine = document.getElementById("server-line");
+const ttsDisclosure = document.getElementById("tts-disclosure");
+
+function addMsg(role, text) {
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  if (role === "user" || role === "assistant") {
+    const lbl = document.createElement("div");
+    lbl.className = "role";
+    lbl.textContent = role === "user" ? "You" : "Aether AI";
+    el.appendChild(lbl);
+  }
+  const span = document.createElement("div");
+  span.textContent = text;
+  el.appendChild(span);
+  messages.appendChild(el);
+  messages.scrollTop = messages.scrollHeight;
+  return el;
+}
+
+function setSendEnabled() {
+  btnSend.disabled = textInput.value.trim() === "";
+}
+
+async function checkServer() {
+  try {
+    const r = await fetch(`${SERVER_URL}/health`, { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    srvDot.className = "server-dot ok";
+    serverLine.innerHTML = `<span class="server-dot ok"></span>Server online · agents ${d.agents_ready ? "ready" : "loading"}`;
+  } catch {
+    srvDot.className = "server-dot err";
+    serverLine.innerHTML = `<span class="server-dot err"></span>Server offline — run <code>python server.py</code>`;
+  }
+}
+
+async function sendMessage() {
+  const text = textInput.value.trim();
+  if (!text) return;
+  textInput.value = "";
+  setSendEnabled();
+  addMsg("user", text);
+  btnSend.disabled = true;
+  ttsDisclosure.style.display = "none";
+
+  try {
+    const resp = await fetch(`${SERVER_URL}/agent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: text, session_id: SESSION_ID }),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+
+    const assistantBlock = addMsg("assistant", data.message_agent || "");
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = "intent: " + (data.intent || "?") + " · channel: " + (data.channel || "?");
+    assistantBlock.appendChild(meta);
+
+    if (data.channel === "voice") {
+      ttsDisclosure.textContent = "The voice you hear is AI-generated and is not a human recording.";
+      ttsDisclosure.style.display = "block";
+    } else {
+      ttsDisclosure.textContent = "";
+    }
+    const v = data.voice && typeof data.voice === "object" ? data.voice : null;
+    if (v && v.audio && v.format) {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.autoplay = true;
+      audio.src = "data:" + v.format + ";base64," + v.audio;
+      assistantBlock.appendChild(audio);
+    }
+    if (v && v.error) {
+      const w = document.createElement("div");
+      w.className = "meta";
+      w.style.color = "#ff8080";
+      w.textContent = v.error;
+      assistantBlock.appendChild(w);
+    }
+  } catch (e) {
+    addMsg("system", "Request failed — is the API server running? " + (e.message || ""));
+  }
+  btnSend.disabled = textInput.value.trim() === "";
+}
+
+btnSend.addEventListener("click", sendMessage);
+textInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+textInput.addEventListener("input", setSendEnabled);
+checkServer();
+setInterval(checkServer, 12000);
+</script>
+</body>
+</html>

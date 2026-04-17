@@ -1,0 +1,236 @@
+RAG KNOWLEDGE BASE
+Domain: Automotive Virtual Showroom
+File: vehicle_catalog.txt
+Version: 1.0
+Description: Vehicle specifications, trims, and feature details for the current model year lineup.
+
+Each entry is a standalone knowledge chunk.
+
+---
+[id: vc_001]
+category: electric_coupe
+name: Aether GT Coupe
+trim: Standard
+drivetrain: Rear-wheel drive
+motor_output_hp: 456
+motor_output_kw: 340
+range_miles: 310
+range_km: 499
+0_to_60_mph: 3.9s
+top_speed_mph: 155
+battery_kwh: 82
+charging_standard: CCS2 / CHAdeMO compatible
+dc_fast_charge_kw: 150
+charge_0_to_80_pct: 28 minutes
+dimensions_length_mm: 4730
+dimensions_width_mm: 1920
+dimensions_height_mm: 1385
+wheelbase_mm: 2880
+cargo_volume_liters: 320
+seating_capacity: 4
+color_options: Glacier White, Midnight Black, Volcanic Red, Dune Sand, Stealth Matte Grey
+price_usd: 74900
+tags: coupe, electric, performance, rear-wheel-drive
+
+---
+[id: vc_002]
+category: electric_coupe
+name: Aether GT Coupe
+trim: Performance
+drivetrain: All-wheel drive
+motor_output_hp: 612
+motor_output_kw: 456
+range_miles: 285
+range_km: 459
+0_to_60_mph: 2.8s
+top_speed_mph: 175
+battery_kwh: 82
+charging_standard: CCS2 / CHAdeMO compatible
+dc_fast_charge_kw: 250
+charge_0_to_80_pct: 18 minutes
+dimensions_length_mm: 4730
+dimensions_width_mm: 1920
+dimensions_height_mm: 1385
+wheelbase_mm: 2880
+cargo_volume_liters: 320
+seating_capacity: 4
+color_options: Glacier White, Midnight Black, Volcanic Red, Dune Sand, Stealth Matte Grey, Carbon Blue (exclusive)
+price_usd: 94500
+tags: coupe, electric, performance, all-wheel-drive, sport
+
+---
+[id: vc_003]
+category: electric_suv
+name: Aether Horizon SUV
+trim: Standard
+drivetrain: All-wheel drive
+motor_output_hp: 389
+motor_output_kw: 290
+range_miles: 340
+range_km: 547
+0_to_60_mph: 5.1s
+top_speed_mph: 135
+battery_kwh: 94
+charging_standard: CCS2
+dc_fast_charge_kw: 150
+charge_0_to_80_pct: 32 minutes
+dimensions_length_mm: 4890
+dimensions_width_mm: 1985
+dimensions_height_mm: 1680
+wheelbase_mm: 2970
+cargo_volume_liters: 620
+cargo_volume_seats_folded_liters: 1480
+seating_capacity: 5
+towing_capacity_kg: 1800
+color_options: Alpine White, Forest Green, Gunmetal Grey, Obsidian Black, Desert Tan
+price_usd: 68400
+tags: suv, electric, family, all-wheel-drive, towing
+
+---
+[id: vc_004]
+category: electric_suv
+name: Aether Horizon SUV
+trim: Long Range
+drivetrain: All-wheel drive
+motor_output_hp: 489
+motor_output_kw: 365
+range_miles: 420
+range_km: 676
+0_to_60_mph: 4.4s
+top_speed_mph: 145
+battery_kwh: 118
+charging_standard: CCS2
+dc_fast_charge_kw: 250
+charge_0_to_80_pct: 22 minutes
+dimensions_length_mm: 4890
+dimensions_width_mm: 1985
+dimensions_height_mm: 1680
+wheelbase_mm: 2970
+cargo_volume_liters: 620
+cargo_volume_seats_folded_liters: 1480
+seating_capacity: 5
+towing_capacity_kg: 2200
+color_options: Alpine White, Forest Green, Gunmetal Grey, Obsidian Black, Desert Tan, Sapphire Blue
+price_usd: 84900
+tags: suv, electric, long-range, all-wheel-drive, towing
+
+---
+[id: vc_005]
+category: electric_sedan
+name: Aether Civic Sedan
+trim: Standard
+drivetrain: Rear-wheel drive
+motor_output_hp: 295
+motor_output_kw: 220
+range_miles: 370
+range_km: 595
+0_to_60_mph: 5.8s
+top_speed_mph: 130
+battery_kwh: 75
+charging_standard: CCS2
+dc_fast_charge_kw: 100
+charge_0_to_80_pct: 38 minutes
+dimensions_length_mm: 4760
+dimensions_width_mm: 1870
+dimensions_height_mm: 1465
+wheelbase_mm: 2920
+cargo_volume_liters: 420
+seating_capacity: 5
+color_options: Pearl White, Storm Grey, Cobalt Blue, Racing Red, Champagne Gold
+price_usd: 52900
+tags: sedan, electric, everyday, rear-wheel-drive, value
+
+---
+[id: vc_006]
+category: electric_sedan
+name: Aether Civic Sedan
+trim: Premium
+drivetrain: All-wheel drive
+motor_output_hp: 358
+motor_output_kw: 267
+range_miles: 345
+range_km: 555
+0_to_60_mph: 4.6s
+top_speed_mph: 145
+battery_kwh: 75
+charging_standard: CCS2
+dc_fast_charge_kw: 150
+charge_0_to_80_pct: 28 minutes
+dimensions_length_mm: 4760
+dimensions_width_mm: 1870
+dimensions_height_mm: 1465
+wheelbase_mm: 2920
+cargo_volume_liters: 420
+seating_capacity: 5
+color_options: Pearl White, Storm Grey, Cobalt Blue, Racing Red, Champagne Gold, Midnight Teal
+price_usd: 63700
+tags: sedan, electric, premium, all-wheel-drive
+
+---
+[id: vc_007]
+category: hypercar
+name: Aether Apex Hypercar
+trim: Single Edition
+drivetrain: All-wheel drive, quad motor
+motor_output_hp: 1020
+motor_output_kw: 760
+range_miles: 240
+range_km: 386
+0_to_60_mph: 1.9s
+top_speed_mph: 217
+battery_kwh: 90
+charging_standard: CCS2
+dc_fast_charge_kw: 350
+charge_0_to_80_pct: 15 minutes
+dimensions_length_mm: 4510
+dimensions_width_mm: 2010
+dimensions_height_mm: 1145
+wheelbase_mm: 2700
+cargo_volume_liters: 90
+seating_capacity: 2
+color_options: Bespoke only — custom paint program available
+production_units: 250 worldwide
+price_usd: 298000
+tags: hypercar, electric, limited, performance, exclusive
+
+---
+[id: vc_008]
+category: features_technology
+name: Standard Technology Package
+compatible_models: Aether Civic Sedan (all trims), Aether Horizon SUV (all trims)
+features: 12.3-inch infotainment display, wireless CarPlay and Android Auto, over-the-air software updates, 8-speaker audio system, dual-zone climate control, heated front seats, Level 2 driver assistance (lane keep, adaptive cruise), 360-degree parking camera
+price_usd: included
+
+---
+[id: vc_009]
+category: features_technology
+name: Premium Technology Package
+compatible_models: All models
+features: 16-inch curved OLED infotainment display, 22-speaker Meridian audio, head-up display, ambient interior lighting (64 colors), massage front seats, Level 3 autonomous highway driving, night vision assist, biometric driver recognition, augmented reality navigation
+price_usd_addon: 8400
+tags: upgrade, technology, premium, autonomous
+
+---
+[id: vc_010]
+category: features_technology
+name: Performance Package
+compatible_models: Aether GT Coupe Performance, Aether Civic Sedan Premium
+features: Track mode with adjustable torque vectoring, carbon ceramic brake upgrade, adaptive magnetic suspension, 21-inch forged alloy wheels, sport-tuned steering, launch control, performance data recorder
+price_usd_addon: 12600
+tags: upgrade, performance, track, sport
+
+---
+[id: vc_011]
+category: color_finish
+name: Standard Paint Finishes
+description: Solid and metallic finishes included in base price. Available colors vary by model — see individual model entries. All standard finishes carry a 7-year corrosion warranty.
+price_usd: included
+
+---
+[id: vc_012]
+category: color_finish
+name: Signature Matte Finish
+description: Exclusive satin-matte clear coat applied over any standard color. Requires Matte Care Kit for maintenance. Not compatible with automated car washes.
+price_usd_addon: 3200
+availability: Aether GT Coupe (all trims), Aether Apex Hypercar
+tags: color, finish, matte, exclusive

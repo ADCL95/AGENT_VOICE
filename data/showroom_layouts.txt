@@ -1,0 +1,131 @@
+RAG KNOWLEDGE BASE
+Domain: Automotive Virtual Showroom
+File: showroom_layouts.txt
+Version: 1.0
+Description: Physical showroom floor layout configurations by square footage and tier. Used to advise dealership clients on how to design and configure their physical space.
+
+Each entry is a standalone knowledge chunk.
+
+---
+[id: sl_001]
+layout_id: showroom_micro_standard
+size_sqft: 800 - 2000
+size_sqm: 74 - 186
+use_case: Urban boutique dealership, satellite location, high-footfall retail space
+tier: Standard
+vehicle_capacity: 3 - 4 display vehicles
+description: Compact layout optimized for urban locations with limited floor area. Recommended configuration includes 2 hero vehicles on a central raised platform, 1 delivery/handover bay, a compact digital configurator station (2 seats), and a reception desk. Wall-mounted displays replace a full demonstration lounge. Minimal storage — parts and accessories managed off-site or via a mezzanine if ceiling height permits.
+recommended_models_on_display: Aether Civic Sedan (1 unit), Aether GT Coupe (1 unit), Aether Horizon SUV (1 unit)
+ceiling_height_min_ft: 14
+lighting: LED track lighting, adjustable accent spots on hero vehicles
+flooring: Polished concrete or large-format porcelain tile
+notes: Prioritize sightlines from entrance to hero vehicle. Avoid cluttering perimeter with accessories.
+tags: micro, urban, compact, boutique
+
+---
+[id: sl_002]
+layout_id: showroom_micro_premium
+size_sqft: 800 - 2000
+size_sqm: 74 - 186
+use_case: Urban luxury boutique, flagship satellite
+tier: Premium
+vehicle_capacity: 2 - 3 display vehicles
+description: Premium version of the micro layout. Fewer vehicles, higher experience quality. One vehicle on a motorized rotating display platform. Private consultation room (min 120 sqft) with immersive wall screen for 3D configurator. Lounge seating area with premium finishes. Dedicated delivery suite with curtain reveal option.
+recommended_models_on_display: Aether GT Coupe Performance (1 unit), Aether Apex Hypercar (1 unit, if applicable)
+ceiling_height_min_ft: 16
+lighting: Tunable white LED with scene presets, spotlighting on rotating platform
+flooring: Honed marble or premium resin
+notes: Rotating platform requires structural reinforcement — confirm floor load rating before installation.
+tags: micro, premium, luxury, boutique, rotating-platform
+
+---
+[id: sl_003]
+layout_id: showroom_medium_standard
+size_sqft: 2000 - 5000
+size_sqm: 186 - 465
+use_case: Suburban dealership, regional flagship
+tier: Standard
+vehicle_capacity: 6 - 8 display vehicles
+description: Full-service layout with dedicated zones. Vehicle display zone (primary), digital configurator suite (4 stations), finance and delivery offices (2 private rooms), customer lounge with café station, service intake bay (1 vehicle), and parts/accessories retail wall. Recommended to separate customer and staff circulation paths.
+recommended_models_on_display: Full current lineup — 1 unit per primary trim for each model
+ceiling_height_min_ft: 16
+lighting: Zone-controlled LED, natural light integration recommended for display zone
+flooring: Polished concrete display zone, carpet or hardwood in lounge and offices
+notes: Service intake bay should have direct exterior access. Finance offices require soundproofing.
+tags: medium, standard, suburban, full-service
+
+---
+[id: sl_004]
+layout_id: showroom_medium_premium
+size_sqft: 2000 - 5000
+size_sqm: 186 - 465
+use_case: Premium suburban dealership, urban flagship
+tier: Premium
+vehicle_capacity: 5 - 7 display vehicles
+description: Premium medium layout with reduced vehicle count in favor of elevated experience zones. Features a dedicated Apex Experience Room (minimum 400 sqft, controlled lighting, immersive surround audio, 270-degree screen) for hypercar presentations. Two private VIP consultation suites. Sommelier-style delivery ceremony space with reveal curtain and overhead spot array. All staff areas concealed from customer view.
+recommended_models_on_display: Aether Civic Sedan Premium, Aether Horizon SUV Long Range, Aether GT Coupe (both trims), Aether Apex Hypercar (static display only)
+ceiling_height_min_ft: 18
+lighting: Architectural tunable LED, DMX control system recommended
+flooring: Premium throughout — no mixed materials
+notes: Apex Experience Room requires acoustic isolation and dedicated HVAC zone.
+tags: medium, premium, flagship, experience-room, vip
+
+---
+[id: sl_005]
+layout_id: showroom_large_standard
+size_sqft: 5000 - 12000
+size_sqm: 465 - 1115
+use_case: Regional flagship, high-volume dealership
+tier: Standard
+vehicle_capacity: 12 - 18 display vehicles
+description: High-capacity layout for volume sales environments. Multiple display rows with clear aisle spacing (minimum 10ft between vehicles). Dedicated pre-owned or certified section (optional, requires 1500+ sqft allocation). Centralized customer service hub. Multiple finance offices (4+). Expanded parts and accessories showroom. Service center with 4+ bays physically connected or adjacent.
+recommended_models_on_display: Full lineup with multiple trims and color variants per model
+ceiling_height_min_ft: 18
+lighting: High-bay LED with individual vehicle accent lighting
+flooring: Sealed concrete or large-format tile throughout
+notes: High-volume layouts benefit from one-way customer flow — map entry and exit points early in design phase.
+tags: large, standard, high-volume, regional
+
+---
+[id: sl_006]
+layout_id: showroom_large_premium
+size_sqft: 5000 - 12000
+size_sqm: 465 - 1115
+use_case: National flagship, brand experience center
+tier: Premium
+vehicle_capacity: 10 - 14 display vehicles
+description: Brand experience center format. Lower vehicle count maximizes experience quality and dwell time. Permanent Apex Hypercar installation (dedicated room, climate controlled). Brand heritage gallery (recommended 600 sqft). Full-service VIP lounge with private dining option. Delivery ceremony suite (seats 8). Outdoor test track access preferred — coordinate site selection. Embedded 3D virtual showroom stations throughout.
+recommended_models_on_display: Curated selection, not full inventory — each vehicle presented as an exhibit
+ceiling_height_min_ft: 22
+lighting: Custom architectural lighting design required
+flooring: Bespoke specification — no standard recommendation
+notes: This format requires dedicated interior design and brand experience team engagement from concept phase.
+tags: large, premium, flagship, brand-experience, national
+
+---
+[id: sl_007]
+category: layout_considerations
+topic: Lighting for vehicle display
+answer: Vehicle paint and finish quality is highly sensitive to lighting angle and color temperature. Recommended color temperature for display vehicles is 4000K to 4500K (neutral white). Avoid warm lighting (below 3000K) which distorts metallic finishes. Each vehicle should have a minimum of four dedicated adjustable spots. For matte finishes, reduce specular highlights by using diffused lighting sources.
+tags: lighting, display, paint, color-temperature
+
+---
+[id: sl_008]
+category: layout_considerations
+topic: Flooring load ratings for vehicle display
+answer: A typical passenger electric vehicle weighs between 1,800 kg and 2,400 kg. Display platforms must be rated for at least 3x the vehicle weight to accommodate jacks and movement equipment. Standard commercial flooring is rated at 500 kg/sqm — verify with your structural engineer for elevated platforms or mezzanine installations.
+tags: flooring, load-rating, structural, safety
+
+---
+[id: sl_009]
+category: layout_considerations
+topic: Minimum aisle clearance between display vehicles
+answer: For customer safety and ADA compliance, minimum aisle clearance between display vehicles is 1.5 meters (approximately 5 feet). For high-footfall premium showrooms, 2 meters is recommended to allow comfortable viewing from multiple angles without congestion.
+tags: aisle, clearance, ADA, safety, spacing
+
+---
+[id: sl_010]
+category: layout_considerations
+topic: Electrical requirements for display vehicles
+answer: Display vehicles should remain connected to a low-amperage trickle charger to maintain battery health and keep infotainment systems live for customer interaction. Each display bay should have a dedicated Level 1 or Level 2 charging outlet (120V or 240V). Plan wiring runs during the initial fit-out — retrofitting is costly and disruptive.
+tags: electrical, charging, display, infrastructure
