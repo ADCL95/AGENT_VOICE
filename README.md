@@ -1,6 +1,6 @@
 # Aether Motors — AI Virtual Showroom
 
-Multi-agent conversational assistant with RAG (**OpenAI Vector Store + FileSearchTool**), Streamlit UI, and a voice client (OpenAI Realtime API) bridged through FastAPI.
+Multi-agent conversational assistant with RAG (**OpenAI Vector Store + FileSearchTool**), Streamlit UI, and a FastAPI HTTP bridge. **User input is text-only** (typed messages); when the assistant selects `channel: voice`, the stack may attach **TTS audio** (Speech API) for playback. Optional Realtime credentials are for exploration, not the default input path.
 
 ## Prerequisites
 

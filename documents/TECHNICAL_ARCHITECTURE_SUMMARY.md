@@ -1,10 +1,18 @@
 # Virtual Showroom Assistant — Technical Architecture Summary
 
-**Version:** 1.0 (condensed companion to `ARQUITECTURA_SHOWROOM_VIRTUAL.md` v2.1)  
+**Version:** 1.0 (implementation-aligned architecture snapshot)  
 **Audience:** evaluators and engineers running the challenge locally  
 **Language:** English (submission artifact)
 
-This document maps the **AI Engineer Technical Challenge** requirements to the implemented system, states **assumptions**, and highlights **technical tradeoffs**. The authoritative design narrative remains in `documents/ARQUITECTURA_SHOWROOM_VIRTUAL.md`.
+This document maps the **AI Engineer Technical Challenge** requirements to the implemented system, states **assumptions**, and highlights **technical tradeoffs**.
+
+---
+
+## 0. Architectural style and engineering principles
+
+- **Clean Architecture (layered boundaries):** the backend is organized under `src/showroom/` with clear layers (`core`, `domain`, `agents`, `rag`, `infrastructure`, `presentation`) and dependency direction from outer adapters toward core business contracts.
+- **SOLID-oriented design:** responsibilities are split into focused classes/services (agent graph builder, response extractor, vector store lifecycle service, TTS adapter, HTTP facade), supporting low coupling, composability, and easier testing.
+- **Adapter isolation for providers:** OpenAI-specific integrations live in infrastructure adapters (`openai_client`, vector store lifecycle, Realtime sessions, TTS), allowing orchestration and domain schemas to remain provider-agnostic at the business boundary.
 
 ---
 
@@ -25,7 +33,7 @@ This document maps the **AI Engineer Technical Challenge** requirements to the i
 | **RAG** over three `.txt` files | **OpenAI Vector Store + `FileSearchTool`** per corpus (`vehicle_catalog.txt`, `showroom_layouts.txt`, `dealership_faq.txt`). **At least two intents** use retrieval demonstrably: **Product Info** and **Space Analysis**; **Purchase Intent** uses FAQ retrieval. |
 | **Structured JSON every turn** | `ShowroomResponse` (Pydantic) as `output_type` on specialists; four root fields: `message_agent`, `channel`, `intent`, `session_id`. |
 | **Multi-turn state** | **Streamlit** (`front-end/app.py`): `agent_history` + `result.to_input_list()` for full OpenAI Agents-compatible history. **`POST /agent` + `voice.html`**: stateless on server (single-turn unless user packs context in `query`); `session_id` is for correlation and contract echo. |
-| **Voice / Realtime** | Brief asks for **Realtime WSS** lifecycle. **Implementation:** primary demo path uses **Speech API (TTS)** when `channel == voice`, plus optional **`GET /voice-token`** for ephemeral Realtime exploration — documented as **stack deviation** (see Section 7). |
+| **Voice / Realtime** | Brief asks for **Realtime WSS** lifecycle. **Implementation:** primary demo path uses **OpenAI Speech API TTS** (`gpt-4o-mini-tts`, default voice `marin`) when `channel == voice`, plus optional **`GET /voice-token`** for ephemeral Realtime exploration (`gpt-4o-realtime-preview`) — documented as **stack deviation** (see Section 7). |
 | **Async-first** | FastAPI path and agent `Runner.run` are async; TTS enrichment may use `asyncio.to_thread` to avoid blocking the event loop. |
 | **Error handling** | Boundaries log with traceback (`logging.exception` / `exc_info=True`), structured context (`session_id`, step). TTS failures attach `voice.error` without breaking the four-field contract. |
 | **Local README** | Reproducible run instructions in repository `README.md`; secrets and optional model keys in `local.settings.json` (gitignored), documented in README. |
@@ -46,6 +54,8 @@ This document maps the **AI Engineer Technical Challenge** requirements to the i
 
 **Assumption:** a dedicated “Voice Request” sub-agent is unnecessary if specialists can emit `channel: voice` when the user asks to hear content again; the orchestrator prompt encodes default routing for ambiguous “read that back” requests.
 
+**Voice delivery component:** when a specialist returns `channel: voice`, the HTTP layer invokes the Text-to-Speech component (`enrich_response_dict_with_tts`) as a dedicated infrastructure agent/adapter. It synthesizes audio and attaches a nested `voice` payload so the client can immediately play audio if the user requested it.
+
 ---
 
 ## 4. End-to-end workflow (conceptual)
@@ -55,7 +65,7 @@ This document maps the **AI Engineer Technical Challenge** requirements to the i
 3. **Run:** `Runner.run(orchestrator, input_messages)`.
 4. **Handoff:** orchestrator delegates to one specialist; specialist runs **hosted file search** then structured output.
 5. **Extract:** `ShowroomAgentStateExtractor` maps run result to `ShowroomResponse`.
-6. **Voice enrichment:** if `channel == voice`, HTTP layer calls `enrich_response_dict_with_tts` (Speech API) and adds nested `voice` payload (base64 audio) **without** changing the four mandatory keys.
+6. **Voice enrichment:** if `channel == voice`, HTTP layer calls `enrich_response_dict_with_tts` (OpenAI Speech API, `gpt-4o-mini-tts`) and adds nested `voice` payload (base64 audio) **without** changing the four mandatory keys.
 
 **Branching:** escalation and voice are **not** free-text channel decisions — they follow orchestration rules and specialist output schema; HTTP layer may apply deterministic policy (e.g. TTS availability).
 
@@ -95,11 +105,11 @@ Every turn exposed to the client conforms to:
 
 ## 7. Stack deviations (required disclosure)
 
-Documented in architecture Section 12; summary here:
+Documented in this architecture summary; key points:
 
 | Topic | Brief expectation | This repo |
 |-------|-------------------|-----------|
-| **Voice channel** | Realtime API WSS: bidirectional audio, full lifecycle | **Primary path:** TTS via **OpenAI Speech API** when `channel == voice`, nested `voice` object with audio. **`/voice-token`** remains for **Realtime** exploration / credentials, not the main Streamlit chat loop. |
+| **Voice channel** | Realtime API WSS: bidirectional audio, full lifecycle | **Primary path:** TTS via **OpenAI Speech API** (`gpt-4o-mini-tts`, voice `marin`) when `channel == voice`, nested `voice` object with audio. **`/voice-token`** remains for **Realtime** exploration / credentials (`gpt-4o-realtime-preview`), not the main Streamlit chat loop. |
 | **Tradeoff** | Full duplex voice UX | **Gain:** strict alignment with RAG-grounded text and stable JSON contract. **Loss:** no continuous server-side VAD conversation in the default demo; `voice_component.py` documents microphone Realtime as out of scope for the main flow. |
 
 Orchestration (**OpenAI Agents SDK**) and RAG (**Vector Store + FileSearchTool**) follow the defined stack **without deviation**.
@@ -141,4 +151,4 @@ Orchestration (**OpenAI Agents SDK**) and RAG (**Vector Store + FileSearchTool**
 
 ---
 
-*This summary is derived from `documents/ARQUITECTURA_SHOWROOM_VIRTUAL.md` v2.1 and the challenge brief. For diagrams (Mermaid), folder trees, and Spanish-language submission context, see the full architecture document.*
+*This summary is derived from the current repository implementation and the challenge brief.*
