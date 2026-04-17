@@ -15,7 +15,7 @@ Multi-agent conversational assistant with RAG (**OpenAI Vector Store + FileSearc
 4. **Configuration** ([`AppSettings` / `get_settings()`](src/showroom/core/settings.py)) loads secrets from `local.settings.json` or environment variables — never from committed source.
 5. **HTTP bridge** ([`ShowroomHttpApplication`](src/showroom/presentation/server.py)) composes FastAPI; **Facade** `ShowroomAgentPipelineFacade` wraps agent execution. The Agents SDK uses `set_default_openai_key` for the model runtime; **Singleton** `OpenAIProvider` supplies a synchronous `OpenAI` client for vector-store provisioning under `showroom.rag`.
 
-Python layout follows [`documents/ARQUITECTURA_SHOWROOM_VIRTUAL.md`](documents/ARQUITECTURA_SHOWROOM_VIRTUAL.md): code lives under `src/showroom/` (subfolders `core`, `helpers`, `domain`, `agents`, `rag`, `infrastructure`, `presentation`). The orchestration layer is the OpenAI **`agents`** SDK.
+Python layout is described in [`documents/TECHNICAL_ARCHITECTURE_SUMMARY.md`](documents/TECHNICAL_ARCHITECTURE_SUMMARY.md): code lives under `src/showroom/` (subfolders `core`, `helpers`, `domain`, `agents`, `rag`, `infrastructure`, `presentation`). The orchestration layer is the OpenAI **`agents`** SDK.
 
 ### Vector index (where it lives)
 
@@ -134,7 +134,7 @@ Filename → environment variable (see **Vector index** above for resolution ord
 
 ## Architecture
 
-See [documents/ARQUITECTURA_SHOWROOM_VIRTUAL.md](documents/ARQUITECTURA_SHOWROOM_VIRTUAL.md).
+See [`documents/TECHNICAL_ARCHITECTURE_SUMMARY.md`](documents/TECHNICAL_ARCHITECTURE_SUMMARY.md) for how the challenge maps to this codebase (agents, RAG, JSON contract, voice stack deviation, state). The original challenge wording is in [`AI_Engineer_Challenge.pdf`](AI_Engineer_Challenge.pdf) at the repo root.
 
 ## Tests
 
