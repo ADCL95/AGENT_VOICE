@@ -13,11 +13,16 @@ Features:
 
 import logging
 import streamlit as st
+import streamlit.components.v1 as components
 import asyncio
 import base64
+import subprocess
+import time
 import uuid
 import json
 import nest_asyncio
+import urllib.error
+import urllib.request
 
 # Must be applied BEFORE any async calls — patches event loop for Streamlit compatibility
 nest_asyncio.apply()
@@ -47,6 +52,7 @@ from showroom.infrastructure.text_to_speech import (
 set_default_openai_key(get_settings().openai_api_key, use_for_tracing=True)
 
 logger = logging.getLogger(__name__)
+_BRIDGE_URL = "http://127.0.0.1:8000"
 
 # ─── Page Configuration ───────────────────────────────────────────────────────
 st.set_page_config(
@@ -266,6 +272,427 @@ def ensure_system_ready() -> bool:
         return False
 
 
+def _is_bridge_healthy(base_url: str = _BRIDGE_URL) -> bool:
+    """Return True when FastAPI bridge responds to /health."""
+    try:
+        with urllib.request.urlopen(f"{base_url}/health", timeout=1.0) as resp:  # noqa: S310
+            return resp.status == 200
+    except (urllib.error.URLError, TimeoutError, ValueError):
+        return False
+
+
+@st.cache_resource(show_spinner=False)
+def ensure_bridge_running() -> subprocess.Popen[str] | None:
+    """
+    Ensure FastAPI bridge is running for voice realtime.
+
+    If an external bridge already runs on :8000, this function is a no-op.
+    Otherwise, it starts ``python server.py`` once per Streamlit process.
+    """
+    if _is_bridge_healthy():
+        return None
+
+    command = [sys.executable, str(_REPO_ROOT / "server.py")]
+    kwargs: dict[str, object] = {
+        "cwd": str(_REPO_ROOT),
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "text": True,
+    }
+    if os.name == "nt" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+    proc = subprocess.Popen(command, **kwargs)  # noqa: S603
+    for _ in range(30):
+        if _is_bridge_healthy():
+            return proc
+        time.sleep(0.2)
+
+    # Startup failed: stop child process to avoid orphan workers.
+    try:
+        proc.terminate()
+    except Exception:
+        logger.exception("Failed to terminate auto-started server.py process")
+    raise RuntimeError(
+        "Could not start the FastAPI bridge on http://127.0.0.1:8000. "
+        "Check your local configuration and port availability."
+    )
+
+
+def render_realtime_voice_control() -> None:
+    """
+    Render a compact ChatGPT-like voice control (single click to talk) directly in Streamlit.
+    """
+    voice_session_id = st.session_state.session_id
+    components.html(
+        f"""
+        <div id="rt-voice-root" style="display:flex;align-items:center;gap:10px;padding:8px 0 2px 0;min-height:56px;">
+          <button id="rt-voice-btn"
+                  style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(176,106,255,0.35);
+                         background:rgba(176,106,255,0.16);color:#d7b6ff;font-size:18px;cursor:pointer;">
+            🎙️
+          </button>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <span id="rt-voice-label" style="font-size:12px;color:#a8a8c0;letter-spacing:.06em;text-transform:uppercase;">
+              Realtime Voice Ready
+            </span>
+            <span id="rt-voice-sub" style="font-size:11px;color:#6e6e86;">
+              Click once and start speaking
+            </span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin:2px 0 6px 2px;">
+          <span id="fc-on-badge" style="font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid #35634a;background:rgba(60,140,90,.18);color:#7be0a1;">
+            Function call: ON
+          </span>
+          <span id="fc-last-badge" style="font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid #3a3a52;background:rgba(80,80,120,.18);color:#b8b8d8;">
+            Last call: idle
+          </span>
+        </div>
+
+        <script>
+        const SERVER_URL = "{_BRIDGE_URL}";
+        const btn = document.getElementById("rt-voice-btn");
+        const label = document.getElementById("rt-voice-label");
+        const sub = document.getElementById("rt-voice-sub");
+        const fcLastBadge = document.getElementById("fc-last-badge");
+
+        let ws = null;
+        let audioCtx = null;
+        let micStream = null;
+        let micNode = null;
+        let playbackCtx = null;
+        let nextPlayTime = 0;
+        let usingLocalVerbatimTts = false;
+        let activePlaybackSources = [];
+
+        function setLastCallState(state) {{
+          // state: idle | running | ok | error
+          if (!fcLastBadge) return;
+          if (state === "running") {{
+            fcLastBadge.textContent = "Last call: running";
+            fcLastBadge.style.borderColor = "#8a6f2e";
+            fcLastBadge.style.background = "rgba(255,200,60,.18)";
+            fcLastBadge.style.color = "#ffd27a";
+            return;
+          }}
+          if (state === "ok") {{
+            fcLastBadge.textContent = "Last call: ok";
+            fcLastBadge.style.borderColor = "#35634a";
+            fcLastBadge.style.background = "rgba(60,140,90,.18)";
+            fcLastBadge.style.color = "#7be0a1";
+            return;
+          }}
+          if (state === "error") {{
+            fcLastBadge.textContent = "Last call: error";
+            fcLastBadge.style.borderColor = "#7a3030";
+            fcLastBadge.style.background = "rgba(180,70,70,.18)";
+            fcLastBadge.style.color = "#ff9c9c";
+            return;
+          }}
+          fcLastBadge.textContent = "Last call: idle";
+          fcLastBadge.style.borderColor = "#3a3a52";
+          fcLastBadge.style.background = "rgba(80,80,120,.18)";
+          fcLastBadge.style.color = "#b8b8d8";
+        }}
+
+        function setUi(state) {{
+          if (state === "connecting") {{
+            label.textContent = "Connecting...";
+            sub.textContent = "Requesting token and microphone";
+            btn.style.background = "rgba(255,192,64,.2)";
+            return;
+          }}
+          if (state === "listening") {{
+            label.textContent = "Listening";
+            sub.textContent = "Speak naturally (server VAD enabled)";
+            btn.style.background = "rgba(77,204,128,.22)";
+            return;
+          }}
+          if (state === "speaking") {{
+            label.textContent = "Assistant Speaking";
+            sub.textContent = "AI voice response in progress";
+            btn.style.background = "rgba(255,215,0,.2)";
+            return;
+          }}
+          if (state === "error") {{
+            label.textContent = "Voice Error";
+            sub.textContent = "Check mic permission / backend health";
+            btn.style.background = "rgba(255,96,96,.2)";
+            return;
+          }}
+          label.textContent = "Realtime Voice Ready";
+          sub.textContent = "Click once and start speaking";
+          btn.style.background = "rgba(176,106,255,.16)";
+        }}
+
+        function floatToPcm16(floatArray) {{
+          const pcm = new Int16Array(floatArray.length);
+          for (let i = 0; i < floatArray.length; i++) {{
+            const s = Math.max(-1, Math.min(1, floatArray[i]));
+            pcm[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }}
+          return pcm;
+        }}
+
+        function toBase64(buffer) {{
+          const bytes = new Uint8Array(buffer);
+          let binary = "";
+          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+          return btoa(binary);
+        }}
+
+        function fromBase64ToInt16(b64) {{
+          const raw = atob(b64);
+          const out = new Int16Array(raw.length / 2);
+          for (let i = 0; i < out.length; i++) {{
+            out[i] = (raw.charCodeAt(i * 2 + 1) << 8) | raw.charCodeAt(i * 2);
+          }}
+          return out;
+        }}
+
+        function playChunk(int16Data) {{
+          if (!playbackCtx) {{
+            playbackCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)({{ sampleRate: 24000 }});
+          }}
+          const f32 = new Float32Array(int16Data.length);
+          for (let i = 0; i < int16Data.length; i++) f32[i] = int16Data[i] / 32768;
+          const buff = playbackCtx.createBuffer(1, f32.length, 24000);
+          buff.getChannelData(0).set(f32);
+          const src = playbackCtx.createBufferSource();
+          src.buffer = buff;
+          src.connect(playbackCtx.destination);
+          activePlaybackSources.push(src);
+          src.onended = () => {{
+            activePlaybackSources = activePlaybackSources.filter((s) => s !== src);
+          }};
+          const now = playbackCtx.currentTime;
+          if (nextPlayTime < now) nextPlayTime = now;
+          src.start(nextPlayTime);
+          nextPlayTime += buff.duration;
+        }}
+
+        function stopAssistantPlayback() {{
+          try {{
+            for (const src of activePlaybackSources) {{
+              try {{ src.stop(); }} catch {{}}
+              try {{ src.disconnect(); }} catch {{}}
+            }}
+          }} finally {{
+            activePlaybackSources = [];
+            nextPlayTime = 0;
+          }}
+        }}
+
+
+        async function startMic() {{
+          micStream = await navigator.mediaDevices.getUserMedia({{
+            audio: {{ sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true }}
+          }});
+          audioCtx = new (globalThis.AudioContext || globalThis.webkitAudioContext)({{ sampleRate: 24000 }});
+          const src = audioCtx.createMediaStreamSource(micStream);
+          micNode = audioCtx.createScriptProcessor(2048, 1, 1);
+          src.connect(micNode);
+          micNode.connect(audioCtx.destination);
+          micNode.onaudioprocess = (e) => {{
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            const pcm16 = floatToPcm16(e.inputBuffer.getChannelData(0));
+            ws.send(JSON.stringify({{ type: "input_audio_buffer.append", audio: toBase64(pcm16.buffer) }}));
+          }};
+        }}
+
+        function stopMic() {{
+          if (micNode) {{ micNode.disconnect(); micNode = null; }}
+          if (audioCtx) {{ audioCtx.close().catch(() => {{}}); audioCtx = null; }}
+          if (micStream) {{ micStream.getTracks().forEach((t) => t.stop()); micStream = null; }}
+        }}
+
+        async function connectVoice() {{
+          setUi("connecting");
+          let token = "";
+          let model = "gpt-4o-mini-realtime-preview";
+          try {{
+            const r = await fetch(`${{SERVER_URL}}/voice-token`);
+            if (!r.ok) throw new Error("voice-token HTTP " + r.status);
+            const data = await r.json();
+            token = data.token;
+            model = data.model || model;
+          }} catch {{
+            setUi("error");
+            return;
+          }}
+
+          try {{
+            ws = new WebSocket(`wss://api.openai.com/v1/realtime?model=${{encodeURIComponent(model)}}`, [
+              "realtime",
+              `openai-insecure-api-key.${{token}}`,
+              "openai-beta.realtime-v1",
+            ]);
+          }} catch {{
+            setUi("error");
+            return;
+          }}
+
+          ws.onopen = async () => {{
+            ws.send(JSON.stringify({{
+              type: "session.update",
+              session: {{
+                modalities: ["text", "audio"],
+                instructions: "For every user question, call query_showroom_agents first. Then answer using ONLY the tool output. Do not add external facts. Be concrete and concise. Keep names, layout IDs, numbers, capacities, and measurements exactly as provided by the tool.",
+                voice: "alloy",
+                input_audio_format: "pcm16",
+                output_audio_format: "pcm16",
+                input_audio_transcription: {{ model: "whisper-1" }},
+                turn_detection: {{ type: "server_vad", threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 350 }},
+                max_output_tokens: 320,
+                tools: [{{
+                  type: "function",
+                  name: "query_showroom_agents",
+                  description: "Use to query the Aether Motors multi-agent RAG system.",
+                  parameters: {{
+                    type: "object",
+                    properties: {{ query: {{ type: "string" }} }},
+                    required: ["query"]
+                  }}
+                }}],
+                tool_choice: "required",
+                temperature: 0.1,
+              }}
+            }}));
+            try {{
+              await startMic();
+              setUi("listening");
+            }} catch {{
+              setUi("error");
+            }}
+          }};
+
+          ws.onmessage = async (ev) => {{
+            let msg = null;
+            try {{ msg = JSON.parse(ev.data); }} catch {{ return; }}
+            if (msg.type === "response.audio.delta" && msg.delta) {{
+              if (usingLocalVerbatimTts) {{
+                return;
+              }}
+              try {{
+                playChunk(fromBase64ToInt16(msg.delta));
+                setUi("speaking");
+              }} catch {{}}
+              return;
+            }}
+            if (msg.type === "response.done") {{
+              nextPlayTime = 0;
+              setUi("listening");
+              return;
+            }}
+            if (msg.type === "input_audio_buffer.speech_started") {{
+              // If user starts speaking while assistant audio is playing, cut playback immediately.
+              stopAssistantPlayback();
+              setUi("listening");
+              return;
+            }}
+            if (msg.type === "response.function_call_arguments.done" && msg.name === "query_showroom_agents") {{
+              setLastCallState("running");
+              let query = "";
+              try {{ query = JSON.parse(msg.arguments || "{{}}").query || ""; }} catch {{}}
+              const quickQuery = query.trim().toLowerCase();
+              if (!quickQuery) {{
+                if (ws && ws.readyState === WebSocket.OPEN) {{
+                  ws.send(JSON.stringify({{
+                    type: "conversation.item.create",
+                    item: {{
+                      type: "function_call_output",
+                      call_id: msg.call_id,
+                      output: "Please ask your question again. I will route it through the showroom agent orchestrator.",
+                    }}
+                  }}));
+                  ws.send(JSON.stringify({{
+                    type: "response.create",
+                    response: {{
+                      instructions: "Respond in one short sentence.",
+                      max_output_tokens: 120,
+                    }}
+                  }}));
+                }}
+                return;
+              }}
+
+              let output = "I could not retrieve that information right now.";
+              try {{
+                const rsp = await fetch(`${{SERVER_URL}}/agent`, {{
+                  method: "POST",
+                  headers: {{ "Content-Type": "application/json" }},
+                  body: JSON.stringify({{ query, session_id: "{voice_session_id}" }}),
+                }});
+                if (rsp.ok) {{
+                  const data = await rsp.json();
+                  output = data.message_agent || output;
+                  setLastCallState("ok");
+                }} else {{
+                  setLastCallState("error");
+                }}
+              }} catch {{
+                setLastCallState("error");
+              }}
+              if (ws && ws.readyState === WebSocket.OPEN) {{
+                const verbatimPayload =
+                  "VERBATIM_START\\n" + output + "\\nVERBATIM_END";
+                ws.send(JSON.stringify({{
+                  type: "conversation.item.create",
+                  item: {{
+                    type: "function_call_output",
+                    call_id: msg.call_id,
+                    output: verbatimPayload
+                  }}
+                }}));
+
+                ws.send(JSON.stringify({{
+                  type: "response.create",
+                  response: {{
+                    instructions: "Read ONLY the text between VERBATIM_START and VERBATIM_END from the latest tool output. Do not summarize, rephrase, reorder, add, or remove details. Preserve layout IDs, names, numbers, capacities, prices, and measurements exactly as written. If escalation details exist, read all escalation details exactly.",
+                    output_modalities: ["audio"],
+                    max_output_tokens: 512,
+                    temperature: 0,
+                  }}
+                }}));
+              }}
+            }}
+          }};
+
+          ws.onerror = () => setUi("error");
+          ws.onclose = () => {{
+            stopMic();
+            ws = null;
+            nextPlayTime = 0;
+            setUi("idle");
+          }};
+        }}
+
+        function disconnectVoice() {{
+          stopAssistantPlayback();
+          stopMic();
+          if (ws) {{
+            ws.close(1000, "user_stop");
+            ws = null;
+          }}
+          setUi("idle");
+        }}
+
+        btn.addEventListener("click", async () => {{
+          if (ws && ws.readyState === WebSocket.OPEN) {{
+            disconnectVoice();
+            return;
+          }}
+          await connectVoice();
+        }});
+
+        globalThis.addEventListener("beforeunload", disconnectVoice);
+        </script>
+        """,
+        height=130,
+    )
+
+
 # ─── Agent Execution ──────────────────────────────────────────────────────────
 
 async def _run_async(orchestrator, input_messages) -> object:
@@ -408,11 +835,12 @@ def render_sidebar() -> None:
 
         st.markdown("---")
 
-        st.markdown("### 🔊 Read aloud")
+        st.markdown("### 🎙️ Realtime Voice Chat")
         st.caption(
-            "There is no microphone input. Ask the assistant to **read a reply aloud**; when the "
-            "response uses **channel: voice**, this app plays **AI-generated speech** (OpenAI TTS)."
+            "Click the microphone to start/stop real-time conversation. "
+            "No extra panel or extra script needed."
         )
+        render_realtime_voice_control()
 
         st.markdown("---")
 
@@ -455,6 +883,16 @@ def render_sidebar() -> None:
 # ─── Main Application ─────────────────────────────────────────────────────────
 
 def main() -> None:
+    try:
+        ensure_bridge_running()
+    except Exception as exc:
+        st.error(
+            "⚠️ Automatic backend startup failed. "
+            "The app could not launch `server.py` on port 8000."
+        )
+        st.caption(f"Details: {exc}")
+        return
+
     # Header
     st.markdown("""
     <div class="aether-header">

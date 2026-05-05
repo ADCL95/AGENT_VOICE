@@ -1,6 +1,6 @@
 # Aether Motors — AI Virtual Showroom
 
-Multi-agent conversational assistant with RAG (**OpenAI Vector Store + FileSearchTool**), Streamlit UI, and a FastAPI HTTP bridge. **User input is text-only** (typed messages); when the assistant selects `channel: voice`, the stack may attach **TTS audio** (Speech API) for playback. Optional Realtime credentials are for exploration, not the default input path.
+Multi-agent conversational assistant with RAG (**OpenAI Vector Store + FileSearchTool**), Streamlit UI, and a FastAPI HTTP bridge. The Streamlit app includes a **Realtime voice control** (sidebar microphone button) that uses OpenAI Realtime WSS with **function calling** to the same orchestrator pipeline used by text chat.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ Multi-agent conversational assistant with RAG (**OpenAI Vector Store + FileSearc
 
 1. **Streamlit** ([`front-end/app.py`](front-end/app.py)) is the main chat UI. It invokes the OpenAI **Agents SDK** (`Runner.run`) with an orchestrator built by [`OpenAIAgentSystemFactory`](src/showroom/agents/factory.py). The orchestrator hands off to five specialists (product, space, purchase, voice, escalation).
 2. **RAG / OpenAI Vector Store** — [`VectorStoreService`](src/showroom/rag/application/services/vector_store_service.py) ensures an OpenAI Vector Store exists and uploads `data/*.txt` through [`OpenAIVectorIndexLifecycle`](src/showroom/rag/infrastructure/openai/lifecycle.py), waiting until each attached file reports API status `completed` (OpenAI file search / retrieval lifecycle). Specialists retrieve context with hosted [`FileSearchTool`](src/showroom/agents/tools/rag_search.py) (Responses API `file_search`).
-3. **Voice (browser)** ([`front-end/voice.html`](front-end/voice.html)) connects to OpenAI Realtime over WebSocket for audio. When the model needs showroom knowledge, it calls your **FastAPI** bridge ([`showroom.presentation.server`](src/showroom/presentation/server.py)) `POST /agent`, which runs the same multi-agent pipeline and returns JSON matching [`ShowroomResponse`](src/showroom/domain/schemas.py).
+3. **Voice (browser / Streamlit sidebar)** uses OpenAI Realtime over WebSocket for audio. Realtime defines tool `query_showroom_agents` and forces `tool_choice: required`. On `response.function_call_arguments.done`, the client executes **FastAPI** `POST /agent`, receives orchestrator output, sends `function_call_output`, and triggers `response.create`.
 4. **Configuration** ([`AppSettings` / `get_settings()`](src/showroom/core/settings.py)) loads secrets from `local.settings.json` or environment variables — never from committed source.
 5. **HTTP bridge** ([`ShowroomHttpApplication`](src/showroom/presentation/server.py)) composes FastAPI; **Facade** `ShowroomAgentPipelineFacade` wraps agent execution. The Agents SDK uses `set_default_openai_key` for the model runtime; **Singleton** `OpenAIProvider` supplies a synchronous `OpenAI` client for vector-store provisioning under `showroom.rag`.
 
@@ -98,13 +98,24 @@ Editable install (`-e .`) adds the `showroom` package from `src/` so imports wor
 streamlit run front-end/app.py
 ```
 
-**FastAPI bridge** (from repo root):
+The Streamlit app automatically starts `server.py` (FastAPI bridge on `:8000`) if it is not already running.
+
+Optional manual bridge run (for standalone testing):
 
 ```bash
 python server.py
 ```
 
-Open `http://localhost:8000` for the standalone voice page.
+Standalone voice page is still available at `http://localhost:8000`.
+
+## Realtime voice behavior (current)
+
+- Sidebar `🎙️` button starts/stops a Realtime session.
+- Function-calling telemetry badges show:
+  - `Function call: ON`
+  - `Last call: idle | running | ok | error`
+- Barge-in is enabled: if user starts speaking while assistant audio is playing, playback is interrupted immediately.
+- Voice and text both route through the same `/agent` orchestrator path to keep RAG-grounded consistency.
 
 ### Vector store IDs per file
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -26,7 +27,11 @@ from showroom.agents.factory import OpenAIAgentSystemFactory
 from showroom.agents.response_extract import ShowroomAgentStateExtractor
 from showroom.core.settings import AppSettings, get_settings
 from showroom.helpers.paths import RepositoryPaths
-from showroom.infrastructure.openai_realtime_sessions import OpenAIRealtimeSessionsClient
+from showroom.infrastructure.openai_realtime_sessions import (
+    OpenAIRealtimeSessionsClient,
+    _REALTIME_INSTRUCTIONS,
+    _QUERY_AGENTS_TOOL,
+)
 from showroom.infrastructure.text_to_speech import enrich_response_dict_with_tts
 from showroom.rag.application.services.vector_store_service import VectorStoreService
 
@@ -67,12 +72,62 @@ class ShowroomAgentPipelineFacade:
     Facade over the OpenAI Agents ``Runner`` and ``ShowroomResponse`` normalization.
     """
 
-    __slots__ = ("_orchestrator",)
+    __slots__ = ("_orchestrator", "_cache_ttl_seconds", "_cache")
 
-    def __init__(self, orchestrator: Any) -> None:
+    def __init__(self, orchestrator: Any, *, cache_ttl_seconds: float = 45.0) -> None:
         self._orchestrator = orchestrator
+        self._cache_ttl_seconds = cache_ttl_seconds
+        self._cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+    @staticmethod
+    def _normalize_query_key(query: str) -> str:
+        return " ".join(query.strip().lower().split())
+
+    @staticmethod
+    def _is_cacheable_query(query: str) -> bool:
+        normalized = " ".join(query.strip().lower().split())
+        if not normalized:
+            return False
+        cache_keywords = (
+            "price",
+            "pricing",
+            "spec",
+            "specs",
+            "range",
+            "battery",
+            "layout",
+            "lease",
+            "financing",
+            "faq",
+            "availability",
+            "dimensions",
+            "horsepower",
+            "0-60",
+        )
+        return any(k in normalized for k in cache_keywords)
+
+    def _cache_get(self, query: str) -> dict[str, Any] | None:
+        key = self._normalize_query_key(query)
+        cached = self._cache.get(key)
+        if cached is None:
+            return None
+        ts, payload = cached
+        if (time.monotonic() - ts) > self._cache_ttl_seconds:
+            self._cache.pop(key, None)
+            return None
+        return payload
+
+    def _cache_set(self, query: str, payload: dict[str, Any]) -> None:
+        key = self._normalize_query_key(query)
+        self._cache[key] = (time.monotonic(), payload)
 
     async def execute_turn(self, session_id: str, user_query: str) -> dict[str, Any]:
+        if self._is_cacheable_query(user_query):
+            cached_payload = self._cache_get(user_query)
+            if cached_payload is not None:
+                logger.info("agent_cache_hit session_id=%s", session_id)
+                return cached_payload
+
         formatted = f"[SESSION_ID: {session_id}]\n\n{user_query}"
         try:
             result = await Runner.run(self._orchestrator, formatted)
@@ -82,7 +137,10 @@ class ShowroomAgentPipelineFacade:
 
         response = ShowroomAgentStateExtractor.default().from_run_result(result, session_id)
         base = response.model_dump()
-        return await asyncio.to_thread(enrich_response_dict_with_tts, base)
+        payload = await asyncio.to_thread(enrich_response_dict_with_tts, base)
+        if self._is_cacheable_query(user_query):
+            self._cache_set(user_query, payload)
+        return payload
 
 
 class VoiceHtmlPageLoader:
@@ -177,6 +235,30 @@ class ShowroomHttpApplication:
             except Exception as e:
                 logger.exception("OpenAI voice-token error")
                 raise HTTPException(status_code=500, detail=str(e)) from e
+
+        @app.get("/realtime-config")
+        async def get_realtime_config() -> dict[str, Any]:
+            """
+            Exposes the Realtime session configuration (model name, instructions, tool schema)
+            so the front-end can bootstrap ``session.update`` without hardcoding values.
+            """
+            settings = get_settings()
+            return {
+                "model": settings.model_realtime,
+                "instructions": _REALTIME_INSTRUCTIONS,
+                "tools": [_QUERY_AGENTS_TOOL],
+                "tool_choice": "required",
+                "voice": "alloy",
+                "input_audio_format": "pcm16",
+                "output_audio_format": "pcm16",
+                "turn_detection": {
+                    "type": "server_vad",
+                    "threshold": 0.5,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": 350,
+                },
+                "max_response_output_tokens": 320,
+            }
 
         @app.post("/agent")
         async def run_agent(req: AgentRequest) -> dict[str, Any]:
